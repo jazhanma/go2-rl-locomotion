@@ -277,7 +277,8 @@ reward:
 ### Training Progress
 The framework generates comprehensive training visualizations:
 
-<img width="5370" height="3541" alt="image" src="https://github.com/user-attachments/assets/2ef792b0-22e2-49f3-841b-5b2251e3db67" />
+<img width="4470" height="2953" alt="image" src="https://github.com/user-attachments/assets/94e2e5ad-c5ae-4fc6-8416-87794079044b" />
+
 
 
 ### Rollout Analysis
