@@ -291,7 +291,9 @@ class VideoRecorder:
         self.fps = fps
         
         # Create output directory
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_dir = os.path.dirname(output_path)
+        if output_dir:  # Only create directory if there's a path component
+            os.makedirs(output_dir, exist_ok=True)
         
         # Video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -345,7 +347,13 @@ class Go2DemoRecorder:
         self.duration = duration
         
         # Initialize PyBullet
-        self.physics_client = p.connect(p.GUI)
+        try:
+            self.physics_client = p.connect(p.GUI)
+        except p.error:
+            # If GUI connection already exists, disconnect and reconnect
+            p.disconnect()
+            self.physics_client = p.connect(p.GUI)
+        
         p.setGravity(0, 0, -9.81, physicsClientId=self.physics_client)
         p.setTimeStep(0.01, physicsClientId=self.physics_client)
         

@@ -180,7 +180,12 @@ class Go2PyBulletEnv(gym.Env):
     def _initialize_simulation(self) -> None:
         """Initialize PyBullet simulation."""
         if self.render_mode == "human":
-            self.physics_client = p.connect(p.GUI)
+            try:
+                self.physics_client = p.connect(p.GUI)
+            except p.error:
+                # If GUI connection already exists, disconnect and reconnect
+                p.disconnect()
+                self.physics_client = p.connect(p.GUI)
         else:
             self.physics_client = p.connect(p.DIRECT)
         

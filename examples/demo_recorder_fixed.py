@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Go2 Quadruped Demo Recorder - Simplified Version
-===============================================
+Go2 Quadruped Demo Recorder - Fixed Version
+===========================================
 
 A professional video recording tool for trained Go2 quadruped RL policies.
-This version integrates with the existing Go2 framework.
+This version handles observation space mismatches and provides better error handling.
 
 Usage:
-    python examples/demo_recorder.py --policy_path models/best_model.zip --duration 90
+    python examples/demo_recorder_fixed.py --policy_path models/best_model.zip --duration 90
 """
 
 import argparse
@@ -29,8 +29,8 @@ from environments.go2_pybullet import Go2PyBulletEnv
 from rewards.reward_functions import RewardFunctionRules
 
 
-class SimpleDemoRecorder:
-    """Simplified demo recorder for Go2 quadruped."""
+class FixedDemoRecorder:
+    """Fixed demo recorder for Go2 quadruped with better error handling."""
     
     def __init__(self, config: Config, policy_path: str, output_path: str, duration: int = 90):
         self.config = config
@@ -39,10 +39,17 @@ class SimpleDemoRecorder:
         self.duration = duration
         
         # Create output directory
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         
         # Initialize PyBullet
-        self.physics_client = p.connect(p.GUI)
+        try:
+            self.physics_client = p.connect(p.GUI)
+        except p.error:
+            p.disconnect()
+            self.physics_client = p.connect(p.GUI)
+        
         p.setGravity(0, 0, -9.81, physicsClientId=self.physics_client)
         p.setTimeStep(0.01, physicsClientId=self.physics_client)
         
@@ -55,8 +62,9 @@ class SimpleDemoRecorder:
         # Initialize environment
         self.env = Go2PyBulletEnv(config, render_mode="human")
         
-        # Load policy
+        # Load policy with observation space handling
         self.policy = self._load_policy(policy_path)
+        self.observation_mismatch = False
         
         # Video recording
         self.video_writer = None
@@ -64,32 +72,65 @@ class SimpleDemoRecorder:
         self.start_time = time.time()
         
     def _load_policy(self, policy_path: str):
-        """Load trained policy."""
+        """Load trained policy with observation space handling."""
         if not os.path.exists(policy_path):
             print(f"⚠️  Policy file not found: {policy_path}")
             print("Using random policy for demo")
             return None
         
         try:
-            # Try to load with stable-baselines3
             from stable_baselines3 import PPO, SAC, TD3, DDPG
             
             # Determine policy type from filename
             if 'ppo' in policy_path.lower():
-                return PPO.load(policy_path)
+                policy = PPO.load(policy_path)
             elif 'sac' in policy_path.lower():
-                return SAC.load(policy_path)
+                policy = SAC.load(policy_path)
             elif 'td3' in policy_path.lower():
-                return TD3.load(policy_path)
+                policy = TD3.load(policy_path)
             elif 'ddpg' in policy_path.lower():
-                return DDPG.load(policy_path)
+                policy = DDPG.load(policy_path)
             else:
-                # Default to PPO
-                return PPO.load(policy_path)
+                policy = PPO.load(policy_path)
+            
+            # Check observation space compatibility
+            if hasattr(policy, 'observation_space'):
+                expected_obs_dim = policy.observation_space.shape[0]
+                actual_obs_dim = self.env.observation_space.shape[0]
+                
+                if expected_obs_dim != actual_obs_dim:
+                    print(f"⚠️  Observation space mismatch:")
+                    print(f"   Policy expects: {expected_obs_dim} dimensions")
+                    print(f"   Environment provides: {actual_obs_dim} dimensions")
+                    print("   Using observation space adaptation")
+                    self.observation_mismatch = True
+                else:
+                    print(f"✅ Policy loaded successfully: {type(policy).__name__}")
+            
+            return policy
+            
         except Exception as e:
             print(f"⚠️  Could not load policy: {e}")
             print("Using random policy for demo")
             return None
+    
+    def _adapt_observation(self, obs: np.ndarray) -> np.ndarray:
+        """Adapt observation to match policy expectations."""
+        if not self.observation_mismatch or self.policy is None:
+            return obs
+        
+        expected_dim = self.policy.observation_space.shape[0]
+        actual_dim = len(obs)
+        
+        if actual_dim > expected_dim:
+            # Truncate observation
+            return obs[:expected_dim]
+        elif actual_dim < expected_dim:
+            # Pad observation with zeros
+            padding = np.zeros(expected_dim - actual_dim)
+            return np.concatenate([obs, padding])
+        else:
+            return obs
     
     def run_demo(self):
         """Run the demo recording."""
@@ -117,7 +158,15 @@ class SimpleDemoRecorder:
             for step in range(max_steps):
                 # Get action from policy
                 if self.policy is not None:
-                    action, _ = self.policy.predict(obs, deterministic=True)
+                    try:
+                        # Adapt observation if needed
+                        adapted_obs = self._adapt_observation(obs)
+                        action, _ = self.policy.predict(adapted_obs, deterministic=True)
+                    except Exception as e:
+                        print(f"⚠️  Policy prediction failed: {e}")
+                        print("Switching to random actions")
+                        action = self.env.action_space.sample()
+                        self.policy = None  # Disable policy
                 else:
                     # Random action for demo
                     action = self.env.action_space.sample()
@@ -209,12 +258,15 @@ class SimpleDemoRecorder:
         camera_pos = camera_info[2]
         camera_target = camera_info[3]
         
-        # Calculate view matrix
+        # Calculate view matrix with proper parameters
+        distance = np.linalg.norm(np.array(camera_pos) - np.array(camera_target))
+        
+        # Use simple camera positioning
         view_matrix = p.computeViewMatrixFromYawPitchRoll(
-            cameraTargetPosition=camera_target,
-            distance=np.linalg.norm(np.array(camera_pos) - np.array(camera_target)),
-            yaw=camera_info[4],
-            pitch=camera_info[5],
+            cameraTargetPosition=list(camera_target),
+            distance=distance,
+            yaw=0,
+            pitch=-30,
             roll=0,
             upAxisIndex=2,
             physicsClientId=self.physics_client
@@ -260,23 +312,28 @@ class SimpleDemoRecorder:
         bg_color = (0, 0, 0)  # Black
         
         # Background rectangle
-        cv2.rectangle(overlay, (10, 10), (400, 200), bg_color, -1)
-        cv2.rectangle(overlay, (10, 10), (400, 200), (255, 255, 255), 2)
+        cv2.rectangle(overlay, (10, 10), (450, 200), bg_color, -1)
+        cv2.rectangle(overlay, (10, 10), (450, 200), (255, 255, 255), 2)
         
         # Text lines
+        policy_type = type(self.policy).__name__ if self.policy else "Random"
+        if self.observation_mismatch:
+            policy_type += " (Adapted)"
+        
         lines = [
             f"Step: {step:4d}",
             f"Reward: {reward:6.2f}",
             f"Speed: {forward_speed:5.2f} m/s",
             f"Energy: {energy:6.2f}",
             f"Length: {episode_length:4d}",
+            f"Policy: {policy_type}",
             f"FPS: {fps:5.1f}"
         ]
         
         y_pos = 40
         for line in lines:
             cv2.putText(overlay, line, (20, y_pos), font, font_scale, text_color, font_thickness)
-            y_pos += 30
+            y_pos += 25
         
         # Performance indicator
         performance = min(1.0, max(0.0, reward / 100.0))
@@ -304,12 +361,12 @@ class SimpleDemoRecorder:
 
 def main():
     """Main function with CLI interface."""
-    parser = argparse.ArgumentParser(description='Go2 Quadruped Demo Recorder')
+    parser = argparse.ArgumentParser(description='Go2 Quadruped Demo Recorder (Fixed)')
     parser.add_argument('--policy_path', type=str, default='models/best_model.zip',
                        help='Path to trained policy model')
     parser.add_argument('--duration', type=int, default=90,
                        help='Demo duration in seconds')
-    parser.add_argument('--output', type=str, default='videos/go2_demo.mp4',
+    parser.add_argument('--output', type=str, default='videos/go2_demo_fixed.mp4',
                        help='Output video file path')
     parser.add_argument('--config', type=str, default=None,
                        help='Path to config file')
@@ -323,7 +380,7 @@ def main():
         config = get_default_config()
     
     # Create demo recorder
-    recorder = SimpleDemoRecorder(
+    recorder = FixedDemoRecorder(
         config=config,
         policy_path=args.policy_path,
         output_path=args.output,
