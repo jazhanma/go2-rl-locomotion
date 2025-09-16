@@ -1,0 +1,36 @@
+# Core ML/RL dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.21.0
+gymnasium>=0.28.0
+stable-baselines3>=2.0.0
+tensorboard>=2.12.0
+
+# Simulation environments
+pybullet>=3.2.5
+mujoco>=2.3.0
+# isaac-gym>=1.0.0  # Requires special installation from NVIDIA
+
+# Visualization
+matplotlib>=3.6.0
+plotly>=5.15.0
+opencv-python>=4.7.0
+imageio>=2.25.0
+imageio-ffmpeg>=0.4.8
+
+# 3D visualization (optional)
+# pyvista>=0.40.0
+# vtk>=9.2.0
+# trimesh>=3.20.0
+
+# Utilities
+tqdm>=4.65.0
+wandb>=0.15.0
+pyyaml>=6.0
+scipy>=1.10.0
+scikit-learn>=1.2.0
+
+# Optional: Web-based 3D visualization
+dash>=2.10.0
+dash-bootstrap-components>=1.4.0
+

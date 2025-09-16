@@ -1,0 +1,2 @@
+# This file ensures the models directory is tracked by git
+# Model checkpoints will be saved here during training

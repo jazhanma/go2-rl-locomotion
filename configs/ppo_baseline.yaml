@@ -1,0 +1,80 @@
+# PPO Baseline Configuration
+experiment_name: "go2_ppo_baseline"
+policy_type: "ppo_baseline"
+
+# Training parameters
+total_timesteps: 1000000
+eval_freq: 10000
+n_eval_episodes: 10
+seed: 42
+
+# Policy configuration
+policy:
+  learning_rate: 3e-4
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  policy_hidden_dims: [512, 256, 128]
+  value_hidden_dims: [512, 256, 128]
+  lstm_hidden_size: 128
+  activation: "tanh"
+  use_lstm: false
+
+# Reward configuration
+reward:
+  forward_speed_target: 0.4
+  forward_speed_weight: 1.0
+  yaw_tracking_weight: 0.5
+  lateral_drift_weight: -0.1
+  tilt_penalty_weight: -0.2
+  height_penalty_weight: -0.1
+  energy_penalty_weight: -0.01
+  action_smoothness_weight: -0.1
+  foot_slip_weight: -0.05
+  early_termination_weight: -1.0
+
+# Environment configuration
+env:
+  sim_backend: "pybullet"
+  timestep: 0.01
+  control_freq: 50
+  max_episode_steps: 1000
+  robot_urdf: "assets/go2.urdf"
+  initial_height: 0.3
+  initial_pose: [0, 0, 0, 0, 0, 0]
+  obs_noise_std: 0.01
+  action_noise_std: 0.01
+  action_scale: 1.0
+  action_clip: 1.0
+
+# Visualization configuration
+viz:
+  plot_freq: 100
+  save_plots: true
+  plot_backend: "matplotlib"
+  enable_3d_viz: true
+  viz_freq: 10
+  save_videos: true
+  video_fps: 30
+  rollout_plot_metrics: ["reward", "forward_speed", "lateral_drift", "tilt_angle", "height"]
+
+# Logging configuration
+log:
+  log_dir: "logs"
+  model_dir: "models"
+  plot_dir: "plots"
+  video_dir: "videos"
+  use_tensorboard: true
+  tensorboard_log_dir: "logs/tensorboard"
+  use_wandb: false
+  wandb_project: "go2-locomotion"
+  wandb_entity: ""
+  save_freq: 10000
+  keep_checkpoints: 5
+
