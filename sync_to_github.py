@@ -139,8 +139,24 @@ def git_sync() -> bool:
         print("🚀 Pushing to GitHub...")
         result = subprocess.run(['git', 'push', 'origin', 'main'], capture_output=True, text=True)
         if result.returncode != 0:
-            print(f"❌ Failed to push: {result.stderr}")
-            return False
+            if "fetch first" in result.stderr or "Updates were rejected" in result.stderr:
+                print("⚠️  Remote has changes. Attempting to pull and merge...")
+                pull_result = subprocess.run(['git', 'pull', 'origin', 'main'], capture_output=True, text=True)
+                if pull_result.returncode == 0:
+                    print("✅ Successfully pulled remote changes. Retrying push...")
+                    push_result = subprocess.run(['git', 'push', 'origin', 'main'], capture_output=True, text=True)
+                    if push_result.returncode == 0:
+                        print("✅ Successfully pushed to GitHub after pull!")
+                        return True
+                    else:
+                        print(f"❌ Failed to push after pull: {push_result.stderr}")
+                        return False
+                else:
+                    print(f"❌ Failed to pull remote changes: {pull_result.stderr}")
+                    return False
+            else:
+                print(f"❌ Failed to push: {result.stderr}")
+                return False
         
         print("✅ Successfully pushed to GitHub!")
         return True
