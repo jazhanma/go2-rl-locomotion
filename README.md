@@ -282,6 +282,9 @@ The framework generates comprehensive training visualizations:
 ### Rollout Analysis
 Detailed analysis of policy performance with pass/fail indicators:
 
+<img width="5370" height="3541" alt="image" src="https://github.com/user-attachments/assets/890936b6-985d-4247-b6d9-fd59cc3d973c" />
+
+
 ![Rollout Analysis](plots/rollout_analysis.png)
 
 ### 3D Visualization
