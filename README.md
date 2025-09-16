@@ -277,7 +277,8 @@ reward:
 ### Training Progress
 The framework generates comprehensive training visualizations:
 
-![Training Progress](plots/training_progress.png)
+<img width="5370" height="3541" alt="image" src="https://github.com/user-attachments/assets/2ef792b0-22e2-49f3-841b-5b2251e3db67" />
+
 
 ### Rollout Analysis
 Detailed analysis of policy performance with pass/fail indicators:
@@ -285,7 +286,6 @@ Detailed analysis of policy performance with pass/fail indicators:
 <img width="5370" height="3541" alt="image" src="https://github.com/user-attachments/assets/890936b6-985d-4247-b6d9-fd59cc3d973c" />
 
 
-![Rollout Analysis](plots/rollout_analysis.png)
 
 ### 3D Visualization
 Real-time 3D rendering of robot locomotion:
