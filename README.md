@@ -2,6 +2,12 @@
 
 A comprehensive reinforcement learning framework for training and visualizing quadruped locomotion policies, specifically designed for the Go2 robot. This framework provides multiple policy architectures, detailed reward functions, and extensive visualization tools for debugging and sharing results.
 
+## 🎬 Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/-OAF5R-mZaE/0.jpg)](https://www.youtube.com/watch?v=-OAF5R-mZaE)
+
+🔗 [Watch on YouTube](https://www.youtube.com/watch?v=-OAF5R-mZaE)
+
 ## 🚀 Features
 
 ### Policy Architectures
